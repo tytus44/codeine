@@ -1,45 +1,94 @@
-
 # Codeine
 
-### Descrizione
+Un editor di codice minimalista e veloce, direttamente nel browser. Codeine offre un'esperienza di editing moderna con supporto per HTML, CSS, JavaScript e file di testo.
 
-**Codeine** è un editor di codice minimalista basato su browser, progettato per essere veloce, portatile e potente. È
-costruito come un singolo file `.html`, il che significa che puoi scaricarlo e aprirlo ovunque, anche offline, senza
-bisogno di un server web o di un'installazione.
+## ✨ Caratteristiche
 
-Il cuore di Codeine è **Monaco Editor**, il motore di editing che alimenta VS Code. Questo ci dà funzionalità di livello
-professionale (come l'evidenziazione della sintassi, il completamento automatico e altro) in un pacchetto super leggero.
+- **Editor avanzato**: Basato su Monaco Editor con syntax highlighting per molteplici linguaggi
+- **Tema chiaro e scuro**: Tema Ayu personalizzato sia in modalità light che dark
+- **Gestione tab**: Crea, apri, chiudi e naviga tra file contemporaneamente
+- **Salvataggio veloce**: Salva i tuoi file localmente con la File System API (o scarica come fallback)
+- **Barra laterale espandibile**: Accesso rapido alle principali funzionalità
+- **Monitoraggio stato**: Status bar con informazioni su riga, colonna, linguaggio e modifiche
+- **Scorciatoie tastiera**: Ctrl+N (nuovo), Ctrl+O (apri), Ctrl+S (salva), F11 (fullscreen), Ctrl+B (toggle sidebar)
+- **Fullscreen**: Immergiti completamente nella scrittura del codice
+- **Responsive**: Optimizzato per desktop e tablet
 
-### Caratteristiche Principali
+## 🚀 Come usare
 
-* **Editor Potente**: Basato su Monaco Editor (VS Code).
-* **Gestione a Tab**: Apri e lavora su più file contemporaneamente.
-* **Temi Chiaro/Scuro**: Cambia tema al volo. La tua preferenza viene salvata nel `localStorage` del browser.
-* **Sidebar Collassabile**: Massimizza lo spazio di lavoro. Anche lo stato (aperto/chiuso) viene salvato.
-* **Gestione File**:
-* **Nuovo File**: Crea una nuova tab con un file vuoto (`Ctrl+N`).
-* **Apri File**: Carica file dal tuo computer (`Ctrl+O`).
-* **Salva File**: Salva il tuo lavoro utilizzando la moderna File System Access API (`Ctrl+S`).
-* **Download**: Un'opzione di fallback per scaricare il file se il salvataggio nativo non è supportato.
-* **Rilevamento Lingua**: La sintassi viene evidenziata automaticamente in base all'estensione del file (es. `.js`,
-`.css`, `.html`).
-* **Zero Installazione**: È un singolo file HTML. Scaricalo e aprilo.
-* **Interfaccia Pulita**: Design minimalista ispirato ai temi "Ayu".
-* **Modalità Fullscreen**: Per un'esperienza di programmazione immersiva (`F11`).
+### Avvio
+Apri semplicemente il file `index.html` nel tuo browser.
 
-### Scorciatoie da Tastiera
+### Operazioni principali
+- **Nuovo file**: Clicca sull'icona "Nuovo" o premi `Ctrl+N`
+- **Apri file**: Clicca su "Apri" o premi `Ctrl+O` (supporta .html, .css, .js, .txt)
+- **Salva file**: Clicca su "Salva" o premi `Ctrl+S`
+- **Scarica file**: Clicca su "Download" per scaricare il file corrente
+- **Cambia tema**: Clicca sull'icona tema per alternare tra light e dark
+- **Fullscreen**: Premi `F11` o clicca l'icona fullscreen
 
-Per velocizzare il tuo flusso di lavoro, abbiamo implementato queste scorciatoie:
+## 🎨 Design
 
-* `Ctrl + N` : Crea un nuovo file (apre una nuova tab).
-* `Ctrl + O` : Apri un file esistente (apre una nuova tab).
-* `Ctrl + S` : Salva il file nella tab attiva.
-* `Ctrl + B` : Mostra o nascondi la sidebar.
-* `F11` : Attiva o disattiva la modalità fullscreen.
+Codeine utilizza il tema **Ayu** con una palette di colori accuratamente selezionata:
+- Colori vivaci e contrastati per migliore leggibilità
+- Interfaccia minimalista e intuitiva
+- Font monospazio Fira Code per il codice
 
-### Tecnologie Utilizzate
+## 🛠️ Linguaggi supportati
 
-* **HTML5**: Struttura della pagina.
-* **CSS3**: Stile (con Variabili CSS per la gestione dei temi).
-* **JavaScript (ES6+)**: Tutta la logica dell'applicazione.
-* **Monaco Editor**: Il componente principale dell'editor di testo.
+- HTML
+- CSS
+- JavaScript
+- Testo semplice
+
+Il linguaggio viene riconosciuto automaticamente dall'estensione del file.
+
+## 💾 Salvataggio e persistenza
+
+- **Tema preferito**: Salvato in localStorage
+- **Stato sidebar**: Memorizzato per la sessione successiva
+- **File System API**: Salva direttamente nel tuo computer (dove supportato)
+- **Download**: Alternativa universale per scaricare i file
+
+## ⌨️ Scorciatoie tastiera
+
+| Scorciatoia | Azione |
+|---|---|
+| `Ctrl+N` | Nuovo file |
+| `Ctrl+O` | Apri file |
+| `Ctrl+S` | Salva file |
+| `Ctrl+B` | Toggle sidebar |
+| `F11` | Fullscreen |
+
+## 📋 Requisiti
+
+- Browser moderno con supporto per:
+  - Monaco Editor (CDN cdnjs)
+  - File System API (per salvataggio nativo)
+  - ES6+ JavaScript
+
+## 📦 Dipendenze
+
+- **Monaco Editor** (v0.45.0): Editor di codice da Microsoft
+- **Google Fonts**: Font Fira Code per il codice
+
+Tutte le dipendenze vengono caricate da CDN.
+
+## 📝 Note di sviluppo
+
+- L'interfaccia è completamente italiana
+- Supporto per temi personalizzabili
+- Sistema di tab indipendente e gestito via JavaScript
+- Monitoraggio automatico di modifiche e avvisi prima della chiusura
+
+## 🔒 Privacy
+
+Codeine non richiede registrazione e non invia dati ai server. Tutti i file rimangono sul tuo computer.
+
+## 📄 Licenza
+
+Questo progetto è disponibile come software libero. Puoi utilizzarlo, modificarlo e distribuirlo secondo le tue esigenze.
+
+---
+
+Buona programmazione con Codeine! ✨
