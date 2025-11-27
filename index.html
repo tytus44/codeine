@@ -30,6 +30,9 @@
             --button-hover: #F2AE49;
             --sidebar-width-collapsed: 60px;
             --sidebar-width-expanded: 250px;
+            /* Modal Colors */
+            --modal-overlay: rgba(0, 0, 0, 0.4);
+            --modal-bg: #FFFFFF;
         }
 
         [data-theme="dark"] {
@@ -43,6 +46,9 @@
             --accent-color: #FFB454;
             --button-bg: #FFB454;
             --button-hover: #FFCC66;
+            /* Modal Colors */
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+            --modal-bg: #01060E;
         }
 
         body {
@@ -350,6 +356,94 @@
             z-index: 9999;
         }
 
+        /* --- STILI PER LA MODALE --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background-color: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            min-width: 300px;
+            max-width: 450px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(10px);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background-color: transparent;
+            color: var(--text-primary);
+            transition: background-color 0.2s;
+        }
+
+        .modal-btn:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .modal-btn.primary {
+            background-color: var(--button-bg);
+            border-color: var(--button-bg);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .modal-btn.primary:hover {
+            background-color: var(--button-hover);
+        }
+
+        [data-theme="dark"] .modal-btn.primary {
+            color: #01060E; /* Testo scuro su bottone chiaro/arancione */
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -417,6 +511,16 @@
     </style>
 </head>
 <body data-theme="light">
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalTitle" class="modal-title">Titolo</div>
+            <div id="modalMessage" class="modal-message">Messaggio</div>
+            <div class="modal-actions">
+                <button class="modal-btn primary" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
     <div class="sidebar" id="sidebar">
         
         <div class="sidebar-header">
@@ -526,7 +630,6 @@
             } 
         });
 
-        // --- NUOVA MODIFICA ---
         // Imposta la lingua predefinita (Italiano) per l'UI di Monaco (es. menu contestuale)
         require.config({
             'vs/nls': {
@@ -535,7 +638,6 @@
                 }
             }
         });
-        // --- FINE MODIFICA ---
 
         require(['vs/editor/editor.main'], function() {
             // Definisci tema Ayu Light personalizzato
@@ -646,6 +748,27 @@
             updateLineCol(editor.getPosition());
         });
 
+        // --- Funzioni per la Modale ---
+        
+        function showModal(title, message) {
+            const overlay = document.getElementById('modalOverlay');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            overlay.classList.add('active');
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.remove('active');
+        }
+
+        // Chiudi modale cliccando fuori dal box
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        });
+
         // --- Funzioni di utilità per le tab ---
 
         function generateTabId() {
@@ -666,6 +789,7 @@
             if (ext === 'css') return 'css';
             if (ext === 'js') return 'javascript';
             if (ext === 'html') return 'html';
+            if (ext === 'md') return 'markdown';
             return 'plaintext'; // Default
         }
         
@@ -675,6 +799,7 @@
                 'html': '.html',
                 'css': '.css',
                 'javascript': '.js',
+                'markdown': '.md',
                 'plaintext': '.txt'
             };
             return extensions[language] || '.txt';
@@ -936,7 +1061,7 @@
         function openFile() {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.html,.css,.js,.txt';
+            input.accept = '.html,.css,.js,.txt,.md';
             
             input.onchange = (e) => {
                 const file = e.target.files[0];
@@ -975,7 +1100,8 @@
                                 'text/html': ['.html'],
                                 'text/css': ['.css'],
                                 'text/javascript': ['.js'],
-                                'text/plain': ['.txt']
+                                'text/plain': ['.txt'],
+                                'text/markdown': ['.md'] // Aggiunto supporto Markdown
                             }
                         }]
                     });
@@ -998,16 +1124,18 @@
                     
                     // Aggiorna la UI
                     updateTabUI(activeTab);
-                    updateUIForActiveTab(); // Aggiorna la status bar
+                    updateUIForActiveTab(); 
                     
-                    alert('File salvato con successo!');
+                    // Mostra modale invece di alert
+                    showModal('Salvataggio', 'File salvato con successo!');
                 } else {
                     downloadFile(); // Fallback
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     console.error('Errore nel salvataggio:', err);
-                    alert('Errore nel salvataggio del file');
+                    // Mostra modale errore invece di alert
+                    showModal('Errore', 'Si è verificato un errore nel salvataggio del file.');
                 }
             }
         }
