@@ -383,7 +383,7 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 24px;
-            min-width: 300px;
+            min-width: 320px;
             max-width: 450px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             transform: translateY(10px);
@@ -407,6 +407,23 @@
             margin-bottom: 24px;
             line-height: 1.5;
         }
+        
+        /* Stili per elementi form dentro la modale */
+        .modal-message select, .modal-message input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .modal-message select:focus, .modal-message input:focus {
+            border-color: var(--accent-color);
+        }
 
         .modal-actions {
             display: flex;
@@ -427,6 +444,14 @@
 
         .modal-btn:hover {
             background-color: var(--bg-secondary);
+        }
+        
+        .modal-btn.secondary {
+            display: none; /* Nascosto di default */
+        }
+        
+        .modal-btn.secondary.visible {
+            display: inline-block;
         }
 
         .modal-btn.primary {
@@ -516,7 +541,8 @@
             <div id="modalTitle" class="modal-title">Titolo</div>
             <div id="modalMessage" class="modal-message">Messaggio</div>
             <div class="modal-actions">
-                <button class="modal-btn primary" onclick="closeModal()">OK</button>
+                <button id="modalBtnCancel" class="modal-btn secondary" onclick="closeModal()">Annulla</button>
+                <button id="modalBtnOk" class="modal-btn primary">OK</button>
             </div>
         </div>
     </div>
@@ -541,7 +567,7 @@
         </div>
 
         <div class="sidebar-menu">
-            <div class="menu-item" onclick="newFile()" title="Nuovo file (Ctrl+N)">
+            <div class="menu-item" onclick="promptNewFile()" title="Nuovo file (Ctrl+N)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
@@ -622,6 +648,9 @@
         let tabs = []; 
         let activeTabId = null; 
         let untitledCounter = 1; 
+        
+        // Chiave per il localStorage
+        const STORAGE_KEY = 'codeine_session_v1';
 
         // Inizializza Monaco Editor
         require.config({ 
@@ -630,11 +659,11 @@
             } 
         });
 
-        // Imposta la lingua predefinita (Italiano) per l'UI di Monaco (es. menu contestuale)
+        // Imposta la lingua predefinita (Italiano)
         require.config({
             'vs/nls': {
                 availableLanguages: {
-                    '*': 'it' // 'it' è il codice per l'italiano
+                    '*': 'it'
                 }
             }
         });
@@ -733,33 +762,75 @@
                 updateLineCol(e.position);
             });
 
-            // Evento per tracciare modifiche
+            // Evento per tracciare modifiche e salvare nel local storage
             editor.onDidChangeModelContent(() => {
                 const activeTab = getActiveTab();
-                if (activeTab && !activeTab.isModified) {
-                    activeTab.isModified = true;
-                    updateTabUI(activeTab); 
-                    updateModifiedStatus(); 
+                if (activeTab) {
+                    if (!activeTab.isModified) {
+                        activeTab.isModified = true;
+                        updateTabUI(activeTab); 
+                        updateModifiedStatus(); 
+                    }
+                    // Non salviamo ad ogni keypress per performance, ma deleghiamo a unload o save espliciti
                 }
             });
             
-            // Inizializza stato e crea la prima tab
-            newFile(); 
-            updateLineCol(editor.getPosition());
+            // Tenta di ripristinare la sessione
+            if (!restoreSession()) {
+                // Se non c'è sessione, crea il primo file di default ma chiedendo il tipo
+                // Iniziamo con un file HTML di default senza chiedere (per l'avvio rapido)
+                // oppure promptNewFile(). Per UX standard, all'avvio pulito meglio un file vuoto pronto.
+                createTab('untitled-1.html', 'html', '\n');
+            }
         });
 
-        // --- Funzioni per la Modale ---
+        // --- Funzioni per la Modale Potenziata ---
         
-        function showModal(title, message) {
+        let onModalConfirm = null;
+
+        function showModal(title, content, isHtml = false, onConfirmCallback = null, showCancel = false) {
             const overlay = document.getElementById('modalOverlay');
             document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalMessage').textContent = message;
+            
+            const msgContainer = document.getElementById('modalMessage');
+            if (isHtml) {
+                msgContainer.innerHTML = content;
+            } else {
+                msgContainer.textContent = content;
+            }
+            
+            onModalConfirm = onConfirmCallback;
+            
+            const btnOk = document.getElementById('modalBtnOk');
+            const btnCancel = document.getElementById('modalBtnCancel');
+            
+            // Reset listener
+            btnOk.onclick = handleModalConfirm;
+            
+            if (showCancel) {
+                btnCancel.classList.add('visible');
+            } else {
+                btnCancel.classList.remove('visible');
+            }
+
             overlay.classList.add('active');
+            
+            // Se c'è un input o select, dagli il focus
+            const input = msgContainer.querySelector('input, select');
+            if (input) input.focus();
+        }
+        
+        function handleModalConfirm() {
+            if (onModalConfirm) {
+                onModalConfirm();
+            }
+            closeModal();
         }
 
         function closeModal() {
             const overlay = document.getElementById('modalOverlay');
             overlay.classList.remove('active');
+            onModalConfirm = null;
         }
 
         // Chiudi modale cliccando fuori dal box
@@ -805,11 +876,78 @@
             return extensions[language] || '.txt';
         }
 
+        // --- Local Storage Management ---
+
+        function saveSession() {
+            // Aggiorna lo stato della tab attiva corrente prima di salvare
+            const activeTab = getActiveTab();
+            if (activeTab) {
+                activeTab.viewState = editor.saveViewState();
+                // Non salviamo activeTab.model nel JSON, ma estraiamo il testo
+            }
+
+            const sessionData = {
+                activeTabId: activeTabId,
+                untitledCounter: untitledCounter,
+                tabs: tabs.map(t => ({
+                    id: t.id,
+                    name: t.name,
+                    language: t.language,
+                    content: t.model.getValue(), // Importante: salva il contenuto
+                    isModified: t.isModified,
+                    // ViewState è complesso da serializzare perfettamente tra sessioni, 
+                    // ma possiamo provarci o resettarlo. Per semplicità qui non lo persistiamo profondamente.
+                }))
+            };
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+            } catch (e) {
+                console.error("Errore salvataggio localStorage (quota superata?)", e);
+            }
+        }
+
+        function restoreSession() {
+            try {
+                const dataStr = localStorage.getItem(STORAGE_KEY);
+                if (!dataStr) return false;
+
+                const data = JSON.parse(dataStr);
+                if (!data.tabs || data.tabs.length === 0) return false;
+
+                // Ripristina contatore
+                untitledCounter = data.untitledCounter || 1;
+
+                // Ricrea le tab
+                data.tabs.forEach(tData => {
+                    createTab(tData.name, tData.language, tData.content, tData.id);
+                    // Ripristina lo stato modified
+                    const tab = getTabById(tData.id);
+                    if (tab) {
+                        tab.isModified = tData.isModified;
+                        updateTabUI(tab);
+                    }
+                });
+
+                // Switch alla tab attiva precedente
+                if (data.activeTabId && getTabById(data.activeTabId)) {
+                    switchTab(data.activeTabId);
+                } else if (tabs.length > 0) {
+                    switchTab(tabs[0].id);
+                }
+
+                return true;
+            } catch (e) {
+                console.error("Errore ripristino sessione", e);
+                return false;
+            }
+        }
+
         // --- Funzioni core per le tab ---
 
-        /** Crea una nuova tab */
-        function createTab(name, language, content = '') {
-            const tabId = generateTabId();
+        /** Crea una nuova tab (aggiornata per supportare ripristino ID) */
+        function createTab(name, language, content = '', explicitId = null) {
+            const tabId = explicitId || generateTabId();
             const model = monaco.editor.createModel(content, language);
             
             const newTab = {
@@ -827,20 +965,18 @@
             return newTab;
         }
 
-        /** Disegna tutte le tab e il pulsante '+' nella barra delle tab */
+        /** Disegna tutte le tab */
         function renderTabs() {
             const tabBar = document.getElementById('tab-bar');
-            tabBar.innerHTML = ''; // Svuota la barra
+            tabBar.innerHTML = ''; 
             
-            // Aggiungi il pulsante '+' all'inizio
             const addBtn = document.createElement('button');
             addBtn.className = 'add-tab-btn';
             addBtn.innerHTML = '+';
             addBtn.title = 'Nuova tab (Ctrl+N)';
-            addBtn.onclick = newFile; // Chiama la funzione newFile esistente
+            addBtn.onclick = promptNewFile; // Modificato per chiamare prompt
             tabBar.appendChild(addBtn);
 
-            // Aggiungi le tab esistenti
             tabs.forEach(tab => {
                 const tabEl = document.createElement('div');
                 tabEl.className = 'tab-item';
@@ -892,7 +1028,7 @@
                 if (tabs.length > 0) {
                     switchTab(tabs[0].id);
                 } else {
-                    newFile();
+                    // Nessuna tab rimasta
                 }
                 return;
             }
@@ -903,10 +1039,11 @@
             }
             editor.focus(); 
 
-            // Aggiorna la UI (solo status bar ora)
             updateUIForActiveTab();
-            
             renderTabs();
+            
+            // Salva sessione al cambio tab per sicurezza
+            saveSession();
         }
 
         /** Chiude una tab */
@@ -914,14 +1051,16 @@
             const tabToClose = getTabById(tabId);
             if (!tabToClose) return;
 
+            // Logica di conferma chiusura
             if (tabToClose.isModified) {
+                // Usiamo un confirm nativo per semplicità sincrona in questo flusso,
+                // oppure potremmo implementare la modale async ma richiederebbe refactoring profondo
                 if (!confirm(`Hai modifiche non salvate per "${tabToClose.name}". Chiudere comunque?`)) {
                     return; 
                 }
             }
 
             tabs = tabs.filter(t => t.id !== tabId);
-            
             tabToClose.model.dispose();
             
             if (activeTabId === tabId) {
@@ -929,31 +1068,30 @@
                 if (tabs.length > 0) {
                     switchTab(tabs[tabs.length - 1].id);
                 } else {
-                    newFile();
+                    // Nessuna tab, svuota editor
+                    // editor.setModel(null); // Monaco non ama null model senza config
+                    // Prompt nuovo file
+                    promptNewFile();
                 }
             } else {
                 renderTabs();
             }
+            saveSession();
         }
 
-        /** Aggiorna la UI (solo status bar) in base alla tab attiva */
         function updateUIForActiveTab() {
             const activeTab = getActiveTab();
             if (!activeTab) {
-                // Stato vuoto se non ci sono tab
                 document.getElementById('language').textContent = "---";
                 updateModifiedStatus();
                 updateLineCol(null);
                 return;
             }
-            
-            // Aggiorna solo la status bar
             document.getElementById('language').textContent = activeTab.language.toUpperCase();
             updateModifiedStatus(); 
             updateLineCol(editor.getPosition()); 
         }
         
-        /** Aggiorna la UI di una singola tab */
         function updateTabUI(tab) {
              const tabEl = document.querySelector(`.tab-item[data-tab-id="${tab.id}"]`);
              if (tabEl) {
@@ -1027,7 +1165,6 @@
             }
         });
 
-        /** Aggiorna posizione cursore */
         function updateLineCol(position) {
             if (position) {
                 document.getElementById('lineCol').textContent = 
@@ -1037,7 +1174,6 @@
             }
         }
 
-        /** Aggiorna stato modificato */
         function updateModifiedStatus() {
             const activeTab = getActiveTab();
             const isMod = activeTab ? activeTab.isModified : false;
@@ -1047,17 +1183,47 @@
 
         // --- Gestione File ---
 
-        /** Crea una nuova tab */
-        function newFile() {
-            const defaultLanguage = 'html';
-            const newFileName = `untitled-${untitledCounter}${getExtensionForLanguage(defaultLanguage)}`;
-            untitledCounter++;
-            const newContent = `\n`; 
+        /** Chiede all'utente che tipo di file creare */
+        function promptNewFile() {
+            const selectHtml = `
+                <label for="fileTypeSelect" style="display:block; margin-bottom:5px;">Seleziona tipo di file:</label>
+                <select id="fileTypeSelect">
+                    <option value="html">HTML (.html)</option>
+                    <option value="css">CSS (.css)</option>
+                    <option value="javascript">JavaScript (.js)</option>
+                    <option value="markdown">Markdown (.md)</option>
+                    <option value="plaintext">Testo Semplice (.txt)</option>
+                </select>
+            `;
             
-            createTab(newFileName, defaultLanguage, newContent);
+            showModal(
+                "Nuovo File", 
+                selectHtml, 
+                true, // isHtml
+                () => {
+                    const select = document.getElementById('fileTypeSelect');
+                    const type = select.value;
+                    newFile(type);
+                },
+                true // showCancel
+            );
         }
 
-        /** Apre un file in una nuova tab */
+        /** Crea fisicamente il file */
+        function newFile(type = 'html') {
+            const ext = getExtensionForLanguage(type);
+            const newFileName = `untitled-${untitledCounter}${ext}`;
+            untitledCounter++;
+            
+            // Boilerplate base
+            let content = '\n';
+            if (type === 'html') content = '<!DOCTYPE html>\n<html>\n<head>\n\t<title>Titolo</title>\n</head>\n<body>\n\n</body>\n</html>';
+            
+            createTab(newFileName, type, content);
+            saveSession();
+        }
+
+        /** Apre un file */
         function openFile() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1077,6 +1243,7 @@
                         
                         updateTabUI(newTab);
                         updateModifiedStatus();
+                        saveSession();
                     };
                     reader.readAsText(file);
                 }
@@ -1101,7 +1268,7 @@
                                 'text/css': ['.css'],
                                 'text/javascript': ['.js'],
                                 'text/plain': ['.txt'],
-                                'text/markdown': ['.md'] // Aggiunto supporto Markdown
+                                'text/markdown': ['.md'] 
                             }
                         }]
                     });
@@ -1110,37 +1277,32 @@
                     await writable.write(activeTab.model.getValue());
                     await writable.close();
                     
-                    // Aggiorna lo stato della tab
                     activeTab.isModified = false;
                     const oldLang = activeTab.language;
-                    activeTab.name = handle.name; // Aggiorna il nome
+                    activeTab.name = handle.name; 
                     
-                    // Aggiorna la lingua se l'utente ha cambiato l'estensione
                     const newLang = getLanguageFromFileName(activeTab.name);
                     if (newLang !== oldLang) {
                         activeTab.language = newLang;
                         monaco.editor.setModelLanguage(activeTab.model, newLang);
                     }
                     
-                    // Aggiorna la UI
                     updateTabUI(activeTab);
                     updateUIForActiveTab(); 
+                    saveSession(); // Aggiorna sessione dopo salvataggio
                     
-                    // Mostra modale invece di alert
                     showModal('Salvataggio', 'File salvato con successo!');
                 } else {
-                    downloadFile(); // Fallback
+                    downloadFile(); 
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     console.error('Errore nel salvataggio:', err);
-                    // Mostra modale errore invece di alert
                     showModal('Errore', 'Si è verificato un errore nel salvataggio del file.');
                 }
             }
         }
 
-        /** Scarica la tab attiva */
         function downloadFile() {
             const activeTab = getActiveTab();
             if (!activeTab) return;
@@ -1158,39 +1320,36 @@
             activeTab.isModified = false;
             updateTabUI(activeTab);
             updateModifiedStatus();
+            saveSession();
         }
 
-        // Shortcut da tastiera
         window.addEventListener('keydown', (e) => {
-            // Ctrl+S per salvare
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 saveFile();
             }
-            // Ctrl+O per aprire
             if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
                 e.preventDefault();
                 openFile();
             }
-            // Ctrl+N per nuovo file
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                 e.preventDefault();
-                newFile();
+                promptNewFile(); // Shortcut ora apre il prompt
             }
-            // F11 per fullscreen
             if (e.key === 'F11') {
                 e.preventDefault();
                 toggleFullscreen();
             }
-            // Ctrl+B per toggle sidebar
             if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
                 e.preventDefault();
                 toggleSidebar();
             }
         });
 
-        // Avvisa prima di chiudere se ci sono modifiche non salvate
+        // Salva stato alla chiusura della pagina
         window.addEventListener('beforeunload', (e) => {
+            saveSession();
+            
             const hasModifications = tabs.some(tab => tab.isModified);
             if (hasModifications) {
                 e.preventDefault();
