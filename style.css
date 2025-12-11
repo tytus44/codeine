@@ -1,0 +1,372 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Light Theme */
+    --bg-app: #FFFFFF;
+    --bg-toolbar: #F3F4F6;
+    --bg-tab-bar: #E5E7EB;
+    --bg-tab-active: #FFFFFF;
+    --bg-tab-inactive: #E5E7EB;
+    --border-color: #D1D5DB;
+    
+    --text-primary: #374151;
+    --text-secondary: #6B7280;
+    
+    --accent-color: #374151;
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --modal-bg: #FFFFFF;
+    
+    --toolbar-height: 48px;
+    --tab-height: 36px;
+    --status-height: 28px;
+}
+
+[data-theme="dark"] {
+    /* Dark Theme */
+    --bg-app: #0D1117;
+    --bg-toolbar: #161B22;
+    --bg-tab-bar: #010409;
+    --bg-tab-active: #0D1117;
+    --bg-tab-inactive: #010409;
+    --border-color: #30363D;
+    
+    --text-primary: #C9D1D9;
+    --text-secondary: #8B949E;
+    
+    --accent-color: #C9D1D9;
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    
+    --modal-overlay: rgba(0, 0, 0, 0.7);
+    --modal-bg: #161B22;
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* --- TOOLBAR (Top) --- */
+.app-header {
+    height: var(--toolbar-height);
+    background-color: var(--bg-toolbar);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+
+.toolbar-btn:hover {
+    background-color: var(--hover-bg);
+}
+
+.toolbar-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background-color: var(--border-color);
+    margin: 0 8px;
+}
+
+.toolbar-btn.active {
+    background-color: var(--hover-bg);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+
+/* --- TAB BAR --- */
+.tab-bar-container {
+    height: var(--tab-height);
+    background-color: var(--bg-tab-bar);
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background-color: var(--bg-tab-inactive);
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 13px;
+    min-width: 120px;
+    max-width: 200px;
+    user-select: none;
+}
+
+.tab-item.active {
+    background-color: var(--bg-tab-active);
+    color: var(--text-primary);
+    border-top: 2px solid var(--accent-color);
+}
+
+.tab-item:not(.active) {
+    border-top: 2px solid transparent; 
+}
+
+.tab-item:hover:not(.active) {
+    background-color: var(--hover-bg);
+}
+
+.tab-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+}
+
+.tab-item.modified .tab-name {
+    font-style: italic;
+}
+
+.tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--text-primary);
+    display: none;
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+.tab-item.modified .tab-dot {
+    display: block;
+}
+
+.tab-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tab-close:hover {
+    background-color: rgba(0,0,0,0.1);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .tab-close:hover {
+    background-color: rgba(255,255,255,0.2);
+}
+
+.tab-close i {
+    width: 12px;
+    height: 12px;
+}
+
+/* --- WORKSPACE --- */
+.workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.editor-wrapper {
+    flex: 1;
+    position: relative;
+    width: 100%;
+}
+
+#editor {
+    width: 100%;
+    height: 100%;
+}
+
+/* --- STATUS BAR --- */
+.status-bar {
+    height: var(--status-height);
+    background-color: var(--bg-toolbar);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    user-select: none;
+}
+
+.status-group {
+    display: flex;
+    gap: 16px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-item i {
+    width: 12px;
+    height: 12px;
+}
+
+/* --- MODALS --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--modal-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-box {
+    background-color: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    width: 400px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+}
+
+.modal-content {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    background-color: var(--bg-toolbar);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    outline: none;
+    font-family: inherit;
+}
+
+input:focus, select:focus {
+    border-color: var(--text-secondary);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.btn:hover {
+    background-color: var(--hover-bg);
+}
+
+.btn-primary {
+    background-color: var(--text-primary);
+    color: var(--bg-app);
+    border-color: var(--text-primary);
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+/* Drag Overlay */
+.drag-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+.drag-overlay.active { opacity: 1; pointer-events: auto; }
